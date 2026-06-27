@@ -216,17 +216,40 @@ Before designing: `superpowers:brainstorming`
 Before implementing: `superpowers:test-driven-development`
 Before committing: `superpowers:requesting-code-review`
 
+## Peer Repos — Hard Boundary
+
+**Never commit or push to peer repo directories.** Each repo has its own Claude session. For cross-repo fixes, create a GitHub issue on the target repo instead.
+
+Peer repos: platform, eidos, ledger, connectors, iot, work, worker, qhorus, pages, engine, claudony, openclaw, neural-text, devtown, aml, clinical, drafthouse, life, quarkmind, flow, desiredstate, fsitrading
+
+## Project Artifacts
+
+Paths that are project content (not workspace noise). Skills use this to avoid
+filtering or dropping commits that touch these paths.
+
+| Path | What it is |
+|------|------------|
+| `CLAUDE.md` | Project conventions |
+| `docs/` | Domain background, specs, ADRs |
+
 ## Work Tracking
 
 **Issue tracking:** enabled
 **GitHub repo:** casehubio/soc
 
+**Automatic behaviours:**
+- Before implementation begins — check for an active issue. If none, run issue-workflow Phase 1 before writing any code.
+- Every issue must be linked to its parent epic — no orphan issues.
+- Before any commit — confirm issue linkage.
+- All commits reference an issue — `Refs #N` or `Closes #N`. No commit may be made without an issue reference.
+
 ## IntelliJ MCP Routing
 
-Two IntelliJ MCP servers are available. They are **not interchangeable**:
+One IntelliJ MCP server is available:
 
-- **`mcp__intellij-index__*`** — use this for ALL code intelligence and navigation. Supports auto-opening projects via `project_path`.
-- **`mcp__intellij__*`** — use only for build/run, formatting, terminal, and file browsing.
+- **`mcp__intellij-index__*`** — use this for ALL code intelligence and navigation. Supports auto-opening projects via `project_path`. Pass `project_path` to auto-open any closed project — never ask the user to open a project manually.
+
+`mcp__intellij__*` (built-in JetBrains MCP) is **disabled** due to a memory leak. Do not attempt to use it. All operations (find class, find references, type hierarchy, diagnostics, rename, move) go through `mcp__intellij-index__*`.
 
 ## Writing Style Guide
 
