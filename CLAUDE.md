@@ -132,23 +132,9 @@ Path: `../parent/docs/AGENTIC-HARNESS-GUIDE.md`
 
 `casehub-soc` is the **Security Operations Center** application built on the CaseHub platform foundation.
 
-This is an **application layer**, not a framework. The foundation provides coordination, accountability, audit, and compliance primitives. casehub-soc provides the cyber incident response domain logic on top: what a security alert is, how incidents are triaged and investigated, how containment actions are authorized, and how the full response chain maintains tamper-evident accountability.
+**Full domain background — read first:** [`docs/DOMAIN.md`](docs/DOMAIN.md) — what a SOC is, the three-tier agent model, MITRE ATT&CK, incident response lifecycle, key entities, compliance frameworks (SOC2, DORA, NIS2), competitive landscape, and research directions. That document gives a new session everything it needs to start researching and designing without external reading.
 
-### Why SOC
-
-The SOC is the highest-value use case for demonstrating advanced multi-agent coordination and control. It exercises every CaseHub primitive simultaneously:
-- **Qhorus channels** map to the 3-tier SOC model: core ops agents / intelligence agents / orchestration
-- **Trust scoring** evolves as agents prove accuracy — a threat intel agent that cries wolf loses trust
-- **CBR** from past incidents directly feeds triage of new ones — this IS the scientific method applied to security
-- **Oversight gates** before irreversible containment actions (host isolation, credential revocation)
-- **Commitment lifecycle** maps to regulatory response windows and SLA obligations
-- **Blocks patterns** (debate, approval, escalation) map perfectly to collaborative threat assessment
-- **Audit ledger** provides tamper-evident compliance trail (SOC2, GDPR Art.22, DORA)
-- **Desired-state** can model target security posture with drift detection
-- **IoT/streams** layer connects to SIEM feeds, network sensors, endpoint telemetry via CloudEvent adapters
-- **SLA breach policies** enforce response time requirements through escalation chains
-- **Worker primitives** model specialized agent capabilities (forensics, malware analysis, OSINT)
-- **Pages (casehub-pages)** provides the dashboard UI — incident timeline, channel views, trust scores, case status
+This is an **application layer**, not a framework. The foundation provides coordination, accountability, audit, and compliance primitives. casehub-soc provides the cyber incident response domain logic on top.
 
 ### Design Philosophy — Be Bold, Be Adventurous
 
