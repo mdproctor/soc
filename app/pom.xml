@@ -57,6 +57,18 @@
     </dependency>
 
     <!-- ================================================================ -->
+    <!-- CloudEvents                                                      -->
+    <!-- ================================================================ -->
+    <dependency>
+      <groupId>io.cloudevents</groupId>
+      <artifactId>cloudevents-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.cloudevents</groupId>
+      <artifactId>cloudevents-json-jackson</artifactId>
+    </dependency>
+
+    <!-- ================================================================ -->
     <!-- CaseHub Foundation                                               -->
     <!-- ================================================================ -->
 
@@ -135,6 +147,12 @@
     <dependency>
       <groupId>io.casehub</groupId>
       <artifactId>casehub-work</artifactId>
+    </dependency>
+
+    <!-- CloudEvent webhook stream ingestion (auto-activates on classpath) -->
+    <dependency>
+      <groupId>io.casehub</groupId>
+      <artifactId>casehub-platform-streams-webhook</artifactId>
     </dependency>
 
     <!-- Typed agent communication (deployment auto-discovered) -->
