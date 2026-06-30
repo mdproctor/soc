@@ -1,7 +1,7 @@
 # casehub-soc — Arc42 Stories
 
-**Date:** 2026-06-29
-**Status:** Design phase — no implementation yet
+**Date:** 2026-06-29 (revised 2026-06-30)
+**Status:** Epic 1 implementation complete on `epic-1-domain-model` branch
 **Platform review:** Complete (see `PLATFORM-INVENTORY.md`)
 
 This document defines the full delivery plan for casehub-soc. Each epic is independently deliverable, references concrete platform SPIs, and has testable acceptance criteria. The sequence is intentional — each epic builds on the previous.
@@ -20,164 +20,195 @@ Build a Security Operations Center application on the CaseHub agentic harness th
 
 ## Epic Overview
 
-| # | Epic | Delivers | MVP? | Dependencies |
+| # | Epic | Delivers | Status | Dependencies |
 |---|---|---|---|---|
-| 1 | Domain Model & Alert Ingestion | Entities, CloudEvent adapter, alert reception | Yes | — |
-| 2 | Incident Triage & Case Lifecycle | Triage workflow, case creation, analyst WorkItems | Yes | Epic 1 |
-| 3 | Threat Intelligence Enrichment | IOC model, ATT&CK mapping, feed integration | Yes | Epic 2 |
-| 4 | Containment & Response Governance | Risk classification, approval gates, containment execution | Yes | Epic 2 |
+| 1 | Domain Vocabulary & Platform Integration | Thin domain types, RAS Ganglion, situation/case YAML, risk classifier | **Done** | — |
+| 2 | Incident Triage & Case Lifecycle | Triage workers, analyst WorkItems, SLA policies | MVP | Epic 1 |
+| 3 | Threat Intelligence Enrichment | IOC enrichment workers, ATT&CK mapping workers, feed integration | MVP | Epic 2 |
+| 4 | Containment & Response Governance | Containment workers, approval WorkItems, ledger entries | MVP | Epic 2 |
 | 5 | Agent Fleet & Trust Routing | Agent descriptors, trust dimensions, trust-weighted routing | — | Epics 2, 4 |
 | 6 | CBR-Based Triage Learning | Retain/Retrieve/Reuse cycle, memory wiring | — | Epics 2, 5 |
 | 7 | Compliance & Audit Evidence | Ledger subclasses, Merkle proofs, DORA/SOC2 reports | — | Epics 2, 4 |
 | 8 | SOC Dashboard | Pages datasets, incident views, trust heatmaps | — | Epics 2, 5 |
 | 9 | LLM Agent Fusion | Claude-powered investigation, narrative synthesis, MCP tools | — | Epics 5, 6 |
-| 10 | Real-Time Event Correlation | casehub-ras integration, temporal pattern detection | — | Epic 1 |
+| 10 | Real-Time Event Correlation | Additional Ganglions, temporal pattern detection, Drools CEP | — | Epic 1 |
 | 11 | Multi-Tenant SOC-as-a-Service | Tenant isolation, per-tenant configuration, RLS | — | All |
 
-**MVP = Epics 1–4.** A functional incident response pipeline: alerts arrive → triage → investigate → contain (with approval) → resolve.
+**MVP = Epics 1–4.** A functional incident response pipeline: alerts arrive → RAS detects situations → case created → investigate → contain (with approval) → resolve.
+
+**Design decision (Epic 1):** SOC does not create custom entity types for alerts, incidents, or cases. Alerts are CloudEvents routed through RAS. Incidents are CaseInstances created by RAS situation triggers. Investigation state lives in CaseContext. The app layer provides domain vocabulary, detection logic, risk classification, and case/situation YAML — not infrastructure.
 
 ---
 
-## Epic 1: Domain Model & Alert Ingestion
+## Epic 1: Domain Vocabulary & Platform Integration ✅
 
-**Goal:** Define the SOC domain model and receive raw security alerts from external SIEM/EDR systems.
+**Goal:** Define the SOC-specific domain vocabulary and wire the platform integration points — RAS situation detection, case definition, and risk classification. No custom infrastructure; the platform handles CloudEvent routing, case lifecycle, and audit.
 
-**Rationale:** Everything else depends on having domain entities and an alert ingestion pathway. Start with the data model and the ability to receive alerts — the simplest possible vertical slice.
+**Rationale:** The original plan called for SecurityAlert entities, JPA persistence, and webhook endpoints. Platform review revealed that RAS already routes CloudEvents to detection strategies, Cases already manage investigation lifecycle, and CaseContext already stores investigation state. The app layer's job is domain vocabulary (what types of things exist in SOC) and detection/classification logic (how to interpret cybersecurity events), not infrastructure plumbing.
+
+**Branch:** `epic-1-domain-model`
 
 ### Stories
 
-#### 1.1 SecurityAlert domain entity
+#### 1.1 Alert severity vocabulary ✅
 
 **Module:** `api/`
 
-**What:** Pure-Java record/interface for a raw security alert. No JPA, no framework deps.
+**What:** `AlertSeverity` enum — CRITICAL, HIGH, MEDIUM, LOW, INFORMATIONAL. Includes `isActionable()` predicate (CRITICAL and HIGH return true). Used by Ganglion detectors and risk classifiers.
 
-**Fields:**
-- `alertId` (UUID)
-- `source` (String — e.g., "crowdstrike", "splunk", "suricata")
-- `sourceAlertId` (String — external system's ID)
-- `timestamp` (Instant)
-- `rawPayload` (String — original JSON/CEF/syslog)
-- `severity` (enum: CRITICAL, HIGH, MEDIUM, LOW, INFORMATIONAL)
-- `category` (String — alert category from source system)
-- `affectedAssets` (List<String> — IPs, hostnames, user accounts)
-- `description` (String)
+**Acceptance:** 5 levels, `isActionable()` semantics. 14 unit tests in `SiemAlertGanglionTest` exercise severity → signal mapping.
 
-**Acceptance:** Compiles with zero dependencies. Used by subsequent stories.
-
-#### 1.2 IOC (Indicator of Compromise) domain entity
+#### 1.2 IOC domain types ✅
 
 **Module:** `api/`
 
-**What:** Value object representing an observable artifact — IP address, file hash, domain, URL, email address, CVE.
+**What:** `IocType` enum (12 types: IP_ADDRESS, FILE_HASH_MD5, FILE_HASH_SHA1, FILE_HASH_SHA256, DOMAIN, URL, EMAIL, CVE, CERTIFICATE_HASH, REGISTRY_KEY, MUTEX, USER_AGENT) and `Ioc` record with `(IocType type, String value)`. Custom equality by (type, value) — usable in sets and maps for deduplication.
 
-**Fields:**
-- `type` (enum: IP_ADDRESS, FILE_HASH_MD5, FILE_HASH_SHA256, DOMAIN, URL, EMAIL, CVE)
-- `value` (String)
-- `confidence` (double, 0.0–1.0)
-- `firstSeen` (Instant)
-- `source` (String — where this IOC was observed)
-- `tags` (Set<String> — e.g., "malware", "c2", "phishing")
+**Acceptance:** Immutable record with custom `equals`/`hashCode`. Unit tested in `IocTest`.
 
-**Acceptance:** Immutable. Equality by (type, value). Usable in sets and maps.
-
-#### 1.3 ATT&CK Technique taxonomy
+#### 1.3 ATT&CK taxonomy ✅
 
 **Module:** `api/`
 
-**What:** Enum or reference data for MITRE ATT&CK technique identification. At minimum, model the 14 tactics as an enum. Technique IDs (T1566, T1059, etc.) as strings with tactic association.
+**What:** `AttackTactic` enum — all 14 MITRE ATT&CK tactics. `AttackTechnique` record with `techniqueId` validation (must match `T\d{4}(\.\d{3})?` pattern), `name`, `tactic`, and optional `subtechniqueOf` parent ID.
 
-**Fields:**
-- `AttackTactic` enum: RECONNAISSANCE, RESOURCE_DEVELOPMENT, INITIAL_ACCESS, EXECUTION, PERSISTENCE, PRIVILEGE_ESCALATION, DEFENSE_EVASION, CREDENTIAL_ACCESS, DISCOVERY, LATERAL_MOVEMENT, COLLECTION, COMMAND_AND_CONTROL, EXFILTRATION, IMPACT
-- `AttackTechnique` record: `techniqueId` (String, e.g., "T1566"), `name` (String), `tactic` (AttackTactic), `subtechniqueOf` (Optional<String>)
+**Acceptance:** All 14 tactics. Technique ID format validation. Unit tested in `AttackTaxonomyTest`.
 
-**Acceptance:** All 14 MITRE ATT&CK tactics represented. Technique IDs parseable from standard MITRE format.
-
-#### 1.4 Incident domain entity
+#### 1.4 SOC operational constants ✅
 
 **Module:** `api/`
 
-**What:** A confirmed threat — promoted from a SecurityAlert after triage. This is the core domain entity that maps to a `CaseInstance` in the engine.
+**What:**
+- `SocGroups` — 6 group constants for WorkItem routing: TIER1_ANALYST, TIER2_ANALYST, TIER3_ANALYST, SOC_MANAGER, NETWORK_OPS, CISO.
+- `SocCapabilities` — 12 capability tags for agent registration, namespaced `soc:*` covering triage, intelligence, investigation, and containment functions.
 
-**Fields:**
-- `incidentId` (UUID)
-- `title` (String)
-- `severity` (enum: reuse from SecurityAlert or define incident-specific scale)
-- `status` (enum: DETECTED, TRIAGING, INVESTIGATING, CONTAINING, ERADICATING, RECOVERING, RESOLVED, CLOSED)
-- `priority` (enum: P1, P2, P3, P4)
-- `triggeringAlerts` (List<UUID> — SecurityAlert IDs that triggered this incident)
-- `iocs` (List<IOC>)
-- `attackTechniques` (List<AttackTechnique>)
-- `assignedAnalyst` (String — actorId)
-- `createdAt` / `updatedAt` (Instant)
+**Acceptance:** Constants compile with zero deps. Referenced by SocActionType, case YAML, and situation YAML.
 
-**Acceptance:** Compiles with zero deps. Status enum has `isTerminal()` and `isActive()` (following LIFECYCLE.md convention).
+#### 1.5 Containment action taxonomy ✅
 
-#### 1.5 CloudEvent adapter for SIEM webhook ingestion
+**Module:** `api/`
+
+**What:** `SocActionType` enum — 9 containment action types, each carrying gate policy, reversibility, candidate approver groups, and reason string. Gate policies: NEVER (auto-approve), CONFIDENCE_THRESHOLD, RISK_SCORE_THRESHOLD, ALWAYS (human approval required). Follows AML's `AmlActionType` pattern but adds the NEVER policy for fully autonomous low-risk actions (ENABLE_ENHANCED_LOGGING).
+
+**Acceptance:** All 9 actions with correct gate policies. `fromActionType()` lookup from dotted string. Unit tested in `SocActionTypeTest`.
+
+#### 1.6 SIEM alert Ganglion ✅
+
+**Module:** `api/`
+
+**What:** `SiemAlertGanglion` — first RAS detection strategy. Extends `JavaSwitchGanglion`. Handles 6 CloudEvent types (`soc.alert.siem.crowdstrike/splunk/sentinel`, `soc.alert.edr.crowdstrike/sentinelone/carbonblack`). Extracts severity from CloudEvent extensions (`alertseverity`, `alertsource`, `alertrule`), maps to DetectionSignal and confidence:
+
+| Severity | Signal | Confidence |
+|---|---|---|
+| CRITICAL | DETECTED | 0.95 |
+| HIGH | DETECTED | 0.80 |
+| MEDIUM | WEAK | 0.50 |
+| LOW | WEAK | 0.20 |
+| INFORMATIONAL | NOISE | 0.05 |
+
+Produces evidence map with `eventType`, `alertSource`, and `alertRule` from extensions. Uses CloudEvent extension API only — no JSON parsing, keeping the api module pure-Java.
+
+**Acceptance:** 14 unit tests covering severity mapping, case insensitivity, missing/unknown severity handling, evidence extraction, ganglionId stamping.
+
+#### 1.7 Situation definition YAML ✅
+
+**Module:** `app/` — `META-INF/ras-situations.yaml`
+
+**What:** Two situation definitions loaded by `YamlSituationDefinitionProvider`:
+
+1. **`soc-siem-alert-critical`** — Critical/high SIEM and EDR alerts. Threshold chain mode: fires when `siem-alert-classifier` Ganglion reports ≥ 0.8 confidence. 6 event types, PT15M correlation window, PT30S buffer delay. Triggers `incident-investigation` case with HIGH priority.
+
+2. **`soc-brute-force`** — Brute-force login detection. Count chain mode: fires after 10 detections from `brute-force-detector` within PT5M window. Triggers `incident-investigation` case with MEDIUM priority.
+
+**Acceptance:** YAML parses without schema errors. Event types match Ganglion handled types.
+
+#### 1.8 Case definition YAML ✅
+
+**Module:** `app/` — `soc/incident-investigation.yaml`
+
+**What:** Case definition DSL 0.1 for the investigation workflow:
+- 3 capabilities: `ioc-enrichment`, `attck-mapping`, `containment-recommendation`
+- 4 bindings: sequential context-change triggers (enrich → map → recommend → human review)
+- 3 success goals: `resolved`, `escalated`, `false-positive` (all check `.analystDecision`)
+- Completion: anyOf all three goals
+- Human task binding for tier-2 analyst review (PT4H expiry)
+
+Investigation flow: alert data arrives in case context → IOC enrichment fires → ATT&CK mapping fires → containment recommendation fires → analyst-review WorkItem created for `soc-tier2-analyst` → analyst sets `analystDecision` → case completes.
+
+**Acceptance:** 5 QuarkusTest tests in `SocCaseHubTest`: definition loads with correct namespace/name, 3 capabilities, 4 bindings, 3 goals, resolved goal checks analystDecision.
+
+#### 1.9 SocCaseHub loader ✅
 
 **Module:** `app/`
 
-**What:** REST endpoint that receives raw SIEM alerts as CloudEvents via webhook. Parses the payload into a `SecurityAlert` and fires a CDI event for downstream processing.
+**What:** `SocCaseHub extends YamlCaseHub` — `@ApplicationScoped` CDI bean that loads `soc/incident-investigation.yaml` and exposes the parsed `CaseDefinition`.
 
-**Platform dependency:** `casehub-platform-stream-webhook`
+**Acceptance:** Tested via `SocCaseHubTest` QuarkusTest.
 
-**Flow:**
-1. SIEM sends HTTP POST with CloudEvent envelope (content-type: `application/cloudevents+json`)
-2. Adapter extracts `ce-type` (e.g., `soc.alert.siem.splunk`, `soc.alert.edr.crowdstrike`)
-3. Adapter parses `data` into `SecurityAlert`
-4. Fires `Event<SecurityAlertReceived>` via CDI
-
-**Acceptance:** Receives a CloudEvent POST, parses to SecurityAlert, CDI event fires. Integration test with sample Splunk/CrowdStrike alert payloads.
-
-#### 1.6 SecurityAlert JPA entity
+#### 1.10 Risk classifier ✅
 
 **Module:** `app/`
 
-**What:** JPA `@Entity` persisting SecurityAlerts to PostgreSQL. Separate from the `api/` domain record — the JPA entity is the infrastructure adapter.
+**What:** `SocActionRiskClassifier` — `@ApplicationScoped @RiskClassifier` implementing `ActionRiskClassifier`. Classifies `PlannedAction` by looking up `SocActionType` from `action.actionType()` and applying the gate policy:
+- NEVER → `Autonomous` (no approval)
+- ALWAYS → `GateRequired` with SOC_MANAGER or higher groups
+- RISK_SCORE_THRESHOLD → gate if `riskScore ≥ 0.8`, otherwise autonomous
+- CONFIDENCE_THRESHOLD → gate if `confidence < 0.9`, otherwise autonomous
 
-**Acceptance:** Flyway migration creates table. CRUD operations work. Query by source, severity, time range.
+Fail-closed: unknown action types return `Autonomous` (no SOC-specific classification). Missing threshold context returns `GateRequired` (fail-closed).
+
+**Acceptance:** 26 QuarkusTest tests covering all gate policies, threshold edge cases, unknown/empty action types, gate metadata (scope, expiresIn, groups, reversibility).
 
 ### Platform Capabilities Used
-- `casehub-platform`: CloudEvents streaming (webhook adapter)
-- `casehub-platform`: `CurrentPrincipal` for tenancy
+- `casehub-ras-api`: `JavaSwitchGanglion` SPI, `DetectionResult`, `DetectionSignal`
+- `casehub-engine`: `ActionRiskClassifier` SPI, `PlannedAction`, `RiskDecision`
+- `casehub-engine-schema`: `YamlCaseHub`, `CaseDefinition` DSL 0.1
+- `casehub-ras`: `YamlSituationDefinitionProvider` (situation YAML loading)
+
+### Platform Gaps Discovered
+- **`SituationStore` implementation missing:** `casehub-ras` runtime requires a `SituationStore` CDI bean, but no module provides one. SOC is the first RAS consumer — this is a platform gap to file. RAS API (Ganglion SPI) works without the runtime; full situation evaluation deferred until platform provides `InMemorySituationStore` or JPA implementation.
 
 ### Deliverable
-Can receive a SIEM alert via webhook, parse it into domain entities, persist it, and fire CDI events for downstream processing.
+Complete domain vocabulary. First Ganglion detector classifying SIEM alerts. Case definition driving investigation workflow. Risk classifier governing containment actions. Two situation definitions triggering investigation cases. 45+ tests across 6 test classes.
+
+### What Was Removed
+The original Epic 1 plan included SecurityAlert entities, JPA persistence, Flyway migrations, a webhook REST endpoint, and a CDI CloudEvent observer. All were built and then deleted after platform review revealed they duplicated platform capabilities:
+
+| Removed | Platform equivalent |
+|---|---|
+| `SecurityAlert` record | CloudEvent + RAS event type routing |
+| `SecurityAlertEntity` / JPA | RAS `SituationContext.detections` + `CaseContext` |
+| `AlertIngestionResource` | `platform-streams-webhook` WebhookResource |
+| `AlertCloudEventObserver` | `RasEngine.@ObservesAsync CloudEvent` |
+| `SecurityAlertReceived` CDI event | `CaseTrigger.fire()` |
+| `Incident` / `IncidentStatus` | `CaseInstance` / `CaseStatus` |
+| `V2000__security_alert.sql` | No app-level persistence needed |
 
 ---
 
 ## Epic 2: Incident Triage & Case Lifecycle
 
-**Goal:** Triage incoming alerts, promote confirmed threats to incidents, and create analyst work items with SLA enforcement.
+**Goal:** Implement the triage workers that populate case context, create analyst work items with SLA enforcement, and activate the investigation workflow end-to-end.
 
-**Rationale:** This is where the CaseHub engine enters. An alert becomes a case. The case drives the investigation workflow. Human analysts receive work items. SLA policies enforce response times.
+**Rationale:** Epic 1 delivered the case definition YAML and situation triggers. This epic brings the workflow to life: worker implementations that execute the capability bindings, SLA policies that enforce response times, and the full RAS → case → investigation → resolution pathway running in integration tests.
+
+**Prerequisite:** RAS `SituationStore` platform gap must be resolved before full integration testing. Unit-level worker testing can proceed without it.
 
 ### Stories
 
-#### 2.1 Case definition — triage playbook (YAML)
+#### 2.1 Case definition — triage playbook (YAML) — ✅ Delivered in Epic 1
 
-**What:** Declarative case definition for the basic triage workflow. YAML file defining:
-- Capability: `alert-classification`
-- Trigger: `contextChange` on alert receipt
-- Binding: capability target → triage agent
-- HumanTask binding: analyst review of triage result
-- Outcomes: CONFIRM, ESCALATE, FALSE_POSITIVE
+Delivered as Epic 1, Story 1.8. The `incident-investigation.yaml` case definition defines 3 capabilities (ioc-enrichment, attck-mapping, containment-recommendation), 4 bindings (sequential context-change triggers), and 3 success goals.
 
-**Platform:** `CaseDefinition` (casehub-engine-schema)
+#### 2.2 Alert-to-case promotion via RAS situations
 
-**Acceptance:** Engine loads YAML, creates CaseInstance on alert receipt, dispatches to triage agent.
+**What:** End-to-end integration: SIEM alert CloudEvent → RAS Ganglion detection → situation threshold met → `CaseTrigger.fire()` creates `CaseInstance` with baseCaseData from situation YAML.
 
-#### 2.2 Alert-to-incident promotion workflow
+**Platform:** `casehub-ras` SituationEvaluator, `casehub-engine` CaseHubRuntime
 
-**What:** When triage confirms the alert is real:
-1. Create `Incident` domain entity
-2. Create `CaseInstance` in engine (incident IS the case)
-3. Associate triggering alerts
-4. Set priority based on severity + asset criticality
+**Blocked by:** Platform gap — `SituationStore` implementation. File parent issue.
 
-**Platform:** `CaseHubRuntime`, `CaseInstanceRepository`
-
-**Acceptance:** Confirmed alert → Incident created → CaseInstance running → investigation workflow begins.
+**Acceptance:** Integration test: send CloudEvent with CRITICAL severity → Ganglion returns DETECTED/0.95 → situation threshold met → CaseInstance created with priority=HIGH. Requires `InMemorySituationStore` or equivalent.
 
 #### 2.3 Rule-based triage agent (WorkerFunction)
 
@@ -319,38 +350,13 @@ Incidents enriched with IOC data from external feeds, mapped to ATT&CK technique
 
 ### Stories
 
-#### 4.1 ContainmentAction domain entity
+#### 4.1 Containment action taxonomy — ✅ Delivered in Epic 1
 
-**Module:** `api/`
+Delivered as Epic 1, Story 1.5. `SocActionType` enum with 9 containment actions, 4 gate policies (NEVER/CONFIDENCE_THRESHOLD/RISK_SCORE_THRESHOLD/ALWAYS), reversibility flags, candidate groups, and reason strings.
 
-**What:** Structured representation of a containment action. Following AML's `AmlActionType` pattern — action type encodes gate policy, reversibility, and candidate groups.
+#### 4.2 ActionRiskClassifier implementation — ✅ Delivered in Epic 1
 
-**`SocActionType` enum:**
-```
-ENABLE_ENHANCED_LOGGING(NEVER, true)
-ROTATE_API_KEY(CONFIDENCE_THRESHOLD, true)
-BLOCK_IP(RISK_SCORE_THRESHOLD, partial)
-BLOCK_DOMAIN(RISK_SCORE_THRESHOLD, partial)
-DISABLE_USER_ACCOUNT(ALWAYS, false)
-ISOLATE_HOST(ALWAYS, false)
-REVOKE_CREDENTIALS(ALWAYS, false)
-NETWORK_SEGMENTATION(ALWAYS, false)
-WIPE_ENDPOINT(ALWAYS, false)
-```
-
-Each entry carries: gate policy, reversibility, default candidate groups for approval, scope path.
-
-#### 4.2 ActionRiskClassifier implementation
-
-**What:** `@RiskClassifier @ApplicationScoped` implementation of `ActionRiskClassifier`. Derives gate metadata from `SocActionType`:
-- NEVER → auto-approve (no WorkItem)
-- CONFIDENCE_THRESHOLD → gate only if agent confidence < threshold
-- RISK_SCORE_THRESHOLD → gate based on asset criticality
-- ALWAYS → always create WorkItem for human approval
-
-**Platform:** `ActionRiskClassifier` SPI (casehub-engine)
-
-**Acceptance:** High-risk actions (ISOLATE_HOST) always create WorkItem. Low-risk actions (ENABLE_ENHANCED_LOGGING) auto-approve. Threshold-based actions gate correctly based on confidence/criticality.
+Delivered as Epic 1, Story 1.10. `SocActionRiskClassifier` with 26 tests covering all gate policies, threshold edge cases, and fail-closed behaviour on missing context.
 
 #### 4.3 Containment approval WorkItem
 
@@ -735,8 +741,9 @@ LLM agents augmenting rule-based fleet. Natural language investigation, narrativ
 
 ### Stories
 
-#### 10.1 casehub-ras integration
-Wire `casehub-ras` Ganglion detection strategies to SOC alert stream. Observes CloudEvents, routes to detection strategies.
+#### 10.1 casehub-ras integration — ✅ Partially delivered in Epic 1
+
+Epic 1 delivered: `SiemAlertGanglion` (first Ganglion detector), `ras-situations.yaml` (two situation definitions), and `casehub-ras-api` dependency wiring. Remaining: additional Ganglion implementations and full RAS runtime integration (blocked on `SituationStore` platform gap).
 
 #### 10.2 Temporal pattern detection rules
 Define detection rules for multi-stage attacks:
@@ -795,7 +802,12 @@ Complete tenant isolation. Managed SOC provider can serve multiple customers wit
 ## Delivery Sequence
 
 ```
-MVP (Epics 1-4): Alert → Triage → Investigate → Contain → Resolve
+Epic 1 ✅ (domain vocabulary, RAS Ganglion, case/situation YAML, risk classifier)
+    │
+    ├── MVP remaining (Epics 2-4):
+    │   ├── Epic 2: Workers + SLA ─────────(blocked: SituationStore gap)
+    │   ├── Epic 3: Enrichment workers ────(after 2)
+    │   └── Epic 4: Containment workers ───(after 2; 4.1 + 4.2 done)
     │
     ├── Epic 5: Agent Fleet & Trust    ─────┐
     │                                       │
@@ -807,7 +819,7 @@ MVP (Epics 1-4): Alert → Triage → Investigate → Contain → Resolve
     │
     ├── Epic 9: LLM Fusion ───────────────(depends on 5, 6)
     │
-    ├── Epic 10: Event Correlation ────────(independent, after 1)
+    ├── Epic 10: Event Correlation ────────(10.1 partially done; after 1)
     │
     └── Epic 11: Multi-Tenant ─────────────(after all)
 ```
@@ -818,27 +830,29 @@ MVP (Epics 1-4): Alert → Triage → Investigate → Contain → Resolve
 - Track C (operations): Epics 8 and 10 (largely independent)
 - Track D (scale): Epic 11 (last — requires everything else stable)
 
+**Cross-epic delivery:** Epic 1 pulled forward stories from Epics 2 (case YAML), 4 (SocActionType, risk classifier), and 10 (RAS Ganglion, situation YAML). This front-loaded the platform integration, making the remaining MVP epics focused on worker implementations and integration testing.
+
 ---
 
 ## Open Research Questions
 
 These should be answered during Epic design sessions (brainstorming skill), not deferred to implementation.
 
-### Alert Ingestion (Epic 1)
-- What CloudEvent `ce-type` taxonomy for SOC alerts? Follow OCSF (Open Cybersecurity Schema Framework)?
-- How to normalise heterogeneous alert formats (Splunk CEF, CrowdStrike JSON, Suricata EVE)?
+### Alert Ingestion (Epic 1) — ✅ Resolved
+- **CloudEvent `ce-type` taxonomy:** Adopted `soc.alert.siem.{source}` and `soc.alert.edr.{source}` convention. Sources: crowdstrike, splunk, sentinel, sentinelone, carbonblack. Auth events: `soc.auth.failure`. Extensions: `alertseverity`, `alertsource`, `alertrule`.
+- **Heterogeneous format normalisation:** Not needed at app layer — RAS routes by `ce-type` to Ganglion detectors, which read CloudEvent extensions. JSON parsing stays in the webhook/connector layer (platform territory).
 
-### Case Architecture (Epic 2)
-- One case definition per incident type (phishing, ransomware, insider threat) or one generic with adaptive branches?
-- Does an incident map 1:1 to a CaseInstance, or can multiple incidents consolidate into one case?
+### Case Architecture (Epic 2) — Partially Resolved
+- **One generic case definition with adaptive branches.** `incident-investigation.yaml` covers all incident types. Type-specific behaviour handled by capability worker implementations and case context data, not separate case definitions.
+- **Incident = CaseInstance.** No separate Incident entity. Priority set via situation YAML `baseCaseData`. Status = `CaseStatus`. Multiple alerts can trigger the same case via situation correlation windows.
 
 ### Enrichment (Epic 3)
 - Which threat feeds to integrate first? VirusTotal (commercial), OTX (free), MISP (self-hosted)?
 - How to handle conflicting intelligence (Feed A says malicious, Feed B says benign)?
 
-### Containment (Epic 4)
-- Where do we draw the line between auto-approve and always-gate? What's the confidence threshold?
-- How to handle containment rollback (un-isolate a host that was wrongly isolated)?
+### Containment (Epic 4) — Partially Resolved
+- **Gate thresholds decided:** RISK_SCORE_GATE_THRESHOLD = 0.8, CONFIDENCE_GATE_THRESHOLD = 0.9. Fully autonomous (NEVER) for ENABLE_ENHANCED_LOGGING. Always-gated for ISOLATE_HOST, REVOKE_CREDENTIALS, DISABLE_USER_ACCOUNT, NETWORK_SEGMENTATION, WIPE_ENDPOINT. Threshold-based for BLOCK_IP, BLOCK_DOMAIN (risk score), ROTATE_API_KEY (confidence).
+- How to handle containment rollback (un-isolate a host that was wrongly isolated)? — Still open.
 
 ### Trust (Epic 5)
 - Trust per ATT&CK tactic (14 dimensions) or per technique (200+)? Start with tactics, refine later?
