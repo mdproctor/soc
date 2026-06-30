@@ -1,0 +1,83 @@
+dsl: "0.1"
+version: "1.0.0"
+name: incident-investigation
+namespace: io.casehub.soc
+title: SOC Incident Investigation — adaptive threat response
+
+spec:
+
+  ## ─── Capabilities ───────────────────────────────────────────────────────────
+  capabilities:
+    - name: ioc-enrichment
+      description: "Extract IOCs from alert data and enrich with threat intelligence"
+      inputSchema: "{ alert: .alert }"
+      outputSchema: "{ iocEnrichment: . }"
+
+    - name: attck-mapping
+      description: "Map indicators and enrichment to MITRE ATT&CK techniques and tactics"
+      inputSchema: "{ alert: .alert, iocEnrichment: .iocEnrichment }"
+      outputSchema: "{ attckMapping: . }"
+
+    - name: containment-recommendation
+      description: "Recommend containment actions based on threat analysis"
+      inputSchema: "{ alert: .alert, iocEnrichment: .iocEnrichment, attckMapping: .attckMapping }"
+      outputSchema: "{ containmentRecommendation: . }"
+
+  ## ─── Goals ──────────────────────────────────────────────────────────────────
+  goals:
+    - name: resolved
+      kind: success
+      condition: ".analystDecision == \"resolved\""
+
+    - name: escalated
+      kind: success
+      condition: ".analystDecision == \"escalated\""
+
+    - name: false-positive
+      kind: success
+      condition: ".analystDecision == \"false-positive\""
+
+  ## ─── Completion ─────────────────────────────────────────────────────────────
+  completion:
+    success:
+      anyOf:
+        - resolved
+        - escalated
+        - false-positive
+
+  ## ─── Bindings ────────────────────────────────────────────────────────────────
+  bindings:
+
+    ## Fires first — IOC enrichment has no prior-context prerequisite.
+    ## Extracts IOCs from the alert and queries threat intelligence feeds.
+    - name: ioc-enrichment
+      on: { contextChange: {} }
+      when: ".alert != null and .iocEnrichment == null"
+      capability: ioc-enrichment
+
+    ## Fires after IOC enrichment. Maps indicators to ATT&CK techniques
+    ## to build the threat narrative.
+    - name: attck-mapping
+      on: { contextChange: {} }
+      when: ".iocEnrichment != null and .attckMapping == null"
+      capability: attck-mapping
+
+    ## Fires after ATT&CK mapping. Recommends containment actions
+    ## based on the complete threat analysis. SocActionRiskClassifier
+    ## gates high-impact containment actions for human approval.
+    - name: containment-recommendation
+      on: { contextChange: {} }
+      when: ".attckMapping != null and .containmentRecommendation == null"
+      capability: containment-recommendation
+
+    ## Human review — fires after containment recommendation is ready.
+    ## Tier-2 analyst reviews findings, approves/rejects containment,
+    ## and sets analystDecision to resolve the case.
+    - name: analyst-review
+      on: { contextChange: {} }
+      when: ".containmentRecommendation != null and .analystDecision == null"
+      humanTask:
+        title: "Review incident findings and containment recommendation"
+        candidateGroups:
+          - soc-tier2-analyst
+        expiresIn: PT4H

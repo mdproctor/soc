@@ -149,6 +149,10 @@
       <artifactId>casehub-worker</artifactId>
     </dependency>
 
+    <!-- RAS runtime deferred — SituationStore has no impl yet (SOC is first RAS consumer).
+         casehub-ras-api in api/pom.xml provides Ganglion SPIs for detectors.
+         TODO: file parent issue for casehub-ras-testing InMemorySituationStore. -->
+
     <!-- ================================================================ -->
     <!-- Test                                                              -->
     <!-- ================================================================ -->

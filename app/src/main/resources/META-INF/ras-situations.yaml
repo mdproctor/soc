@@ -1,0 +1,46 @@
+situations:
+
+  # Critical SIEM/EDR alerts — high-confidence detections trigger an investigation case.
+  # Threshold chain mode: fires when siem-alert-classifier reports >= 0.8 confidence
+  # (i.e. CRITICAL or HIGH severity alerts).
+  - situationId: soc-siem-alert-critical
+    eventTypes:
+      - soc.alert.siem.crowdstrike
+      - soc.alert.siem.splunk
+      - soc.alert.siem.sentinel
+      - soc.alert.edr.crowdstrike
+      - soc.alert.edr.sentinelone
+      - soc.alert.edr.carbonblack
+    correlationWindow: PT15M
+    eventBufferDelay: PT30S
+    chainMode:
+      type: threshold
+      ganglia:
+        - siem-alert-classifier
+      minConfidence: 0.8
+    triggerConfig:
+      caseNamespace: io.casehub.soc
+      caseName: incident-investigation
+      caseVersion: "1.0"
+      baseCaseData:
+        priority: HIGH
+        source: siem-alert
+
+  # Brute-force detection — repeated auth failures within a short window.
+  # Count chain mode: fires after 10 detections from brute-force-detector
+  # within the 5-minute correlation window.
+  - situationId: soc-brute-force
+    eventTypes:
+      - soc.auth.failure
+    correlationWindow: PT5M
+    chainMode:
+      type: count
+      ganglionId: brute-force-detector
+      requiredCount: 10
+    triggerConfig:
+      caseNamespace: io.casehub.soc
+      caseName: incident-investigation
+      caseVersion: "1.0"
+      baseCaseData:
+        priority: MEDIUM
+        source: brute-force
