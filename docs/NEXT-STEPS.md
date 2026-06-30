@@ -1,8 +1,8 @@
 # Next Steps — casehub-soc Development Roadmap
 
-**Date:** 2026-06-29
-**Status:** Greenfield scaffold complete. Build infrastructure complete. No domain implementation yet.
-**Note:** IntelliJ MCP disabled due to memory leak — all semantic navigation via bash/grep/find during platform review.
+**Date:** 2026-06-30
+**Status:** Epic 1 complete on `epic-1-domain-model` branch. Domain vocabulary, RAS Ganglion, case/situation YAML, risk classifier delivered with 45+ tests.
+**Note:** IntelliJ MCP available via `mcp__intellij-index__*`.
 
 ---
 
@@ -16,18 +16,20 @@
 - App pom cleanup — PostgreSQL driver added, redundant deps removed (6624a12)
 - Domain background document — SOC fundamentals, MITRE ATT&CK, incident lifecycle, compliance (DOMAIN.md)
 - GitHub repo created: casehubio/soc
+- **Epic 1: Domain Vocabulary & Platform Integration** — thin domain types, SiemAlertGanglion, SocActionRiskClassifier, case/situation YAML, SocCaseHub (branch: `epic-1-domain-model`)
+- Platform capability inventory (PLATFORM-INVENTORY.md)
+- ARC42STORIES.md — full delivery plan with 11 epics
 
 ### 🚧 In Progress (Open Issues)
-- #5: ARC42STORIES.md stub
+- #7: Epic 1 — domain model implementation (branch work complete, awaiting merge)
+- #5: ARC42STORIES.md stub (content written, issue may need closure)
 - #4: issue-workflow setup — commit hooks and work tracking
 - #3: build infrastructure — CSV entries, dashboard, README badge
 - #2: parent BOM entries for casehub-soc artifacts
 - #1: CI workflow — publish.yml with repository_dispatch trigger
 
-### ❌ Missing
-- **Platform capability inventory** — we have DOMAIN.md (SOC context) but no structured review of what the platform already provides
-- **Application architecture** — no domain model, no SPI definitions, no agent design
-- **Epic planning** — no arc42stories chapters, no incremental delivery plan
+### ❌ Missing / Blocked
+- **RAS runtime integration** — `SituationStore` CDI bean has no implementation in any platform module. SOC is the first RAS consumer. File parent issue for `casehub-ras-testing` `InMemorySituationStore`.
 - **Reference implementation study** — haven't analyzed peer apps (casehub-aml, casehub-clinical, casehub-life) to learn proven patterns
 
 ---
