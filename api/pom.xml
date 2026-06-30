@@ -23,6 +23,19 @@
       <artifactId>casehub-platform-api</artifactId>
     </dependency>
 
+    <!-- RAS situation detection SPIs — Ganglion base classes -->
+    <dependency>
+      <groupId>io.casehub</groupId>
+      <artifactId>casehub-ras-api</artifactId>
+    </dependency>
+
+    <!-- Mutiny — provided by Quarkus at runtime; needed at compile time for Ganglion SPI -->
+    <dependency>
+      <groupId>io.smallrye.reactive</groupId>
+      <artifactId>mutiny</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
