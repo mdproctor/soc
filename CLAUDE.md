@@ -148,7 +148,7 @@ This is an **application layer**, not a framework. The foundation provides coord
 
 4. **Propose new platform capabilities.** If SOC needs something the platform doesn't have, file it as a parent issue. Examples: real-time streaming event correlation (casehub-ras), temporal pattern detection (Drools CEP integration), automated playbook execution. Push the platform forward — don't work around gaps silently.
 
-5. **Pages dashboard** — design a rich SOC dashboard using casehub-pages. Incident timeline, agent trust scores, channel activity, case status, threat heat maps. Pages is embedded via iframe — design the data contracts (datasets) that the dashboard will consume.
+5. **Pages UI** — design the SOC application UI using casehub-pages. Incident timeline, agent trust scores, channel activity, case status, threat heat maps. Use `hostPanel()` for custom SOC-specific components; use the DSL for data-bound visualizations. Pages is embedded via iframe — design the data contracts (datasets) and panel layout that the application will consume. Drive requirements upstream if SOC needs primitives casehub-pages doesn't have yet.
 
 ### Platform Coherence is Critical
 
