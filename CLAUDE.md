@@ -60,7 +60,7 @@ Before any git operation, run `git rev-parse --show-toplevel` to confirm which r
 | specs      | project     | lands in `docs/specs/` — promoted at epic close |
 | blog       | workspace   | staged here; published to mdproctor.github.io via publish-blog |
 | plans      | workspace   | stay in workspace permanently |
-| design     | workspace   | epic journal stays in workspace |
+| design     | project     | journal in workspace `design/`; merge target is project `ARC42STORIES.MD` |
 | snapshots  | workspace   | stay in workspace permanently |
 | handover   | workspace   | |
 
@@ -230,6 +230,7 @@ filtering or dropping commits that touch these paths.
 | Path | What it is |
 |------|------------|
 | `CLAUDE.md` | Project conventions |
+| `ARC42STORIES.MD` | Primary architecture record — epics, stories, delivery plan |
 | `docs/` | Domain background, specs, ADRs |
 
 ## Work Tracking
