@@ -1,0 +1,9 @@
+branch: issue-8-epic-2-triage-lifecycle
+project-sha: 17f118f222085015395672a8890ca2963bcf767c
+date: 2026-06-30
+issue: 8
+issue-repo: casehubio/soc
+covers: 8,10,11,12,13
+flyway-next-v: unknown
+design-repo: project
+design-section-hashes: f4eeb3e7:##
