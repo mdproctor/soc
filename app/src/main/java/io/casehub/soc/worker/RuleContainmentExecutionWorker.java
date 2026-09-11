@@ -72,6 +72,7 @@ public final class RuleContainmentExecutionWorker {
                     output.put("errorReason", result.errorReason());
                     output.put("executionTimestamp", result.timestamp().toString());
                     output.put("detectionToContainmentMs", detectionToContainmentMs);
+                    output.put("actionParameters", actionParams);
 
                     return WorkerResult.of(output);
                 })

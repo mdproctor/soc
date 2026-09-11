@@ -9,6 +9,8 @@ import io.casehub.soc.worker.LlmIocEnrichmentWorker;
 import io.casehub.soc.worker.RuleAttckMappingWorker;
 import io.casehub.soc.worker.RuleContainmentExecutionWorker;
 import io.casehub.soc.worker.RuleContainmentRecommendationWorker;
+import io.casehub.soc.worker.RuleRecoveryVerificationWorker;
+import io.casehub.soc.worker.SocRecoveryVerificationResultWorker;
 import io.casehub.soc.worker.RuleCbrRetrievalWorker;
 import io.casehub.soc.worker.RuleIocEnrichmentWorker;
 import io.casehub.worker.api.Worker;
@@ -46,6 +48,8 @@ public final class SocInvestigationCaseDescriptor {
                 LlmAttckMappingWorker.create(llmModel),
                 RuleContainmentRecommendationWorker.create(),
                 LlmContainmentRecommendationWorker.create(llmModel),
-                RuleContainmentExecutionWorker.create(executor));
+                RuleContainmentExecutionWorker.create(executor),
+                RuleRecoveryVerificationWorker.create(),
+                SocRecoveryVerificationResultWorker.create());
     }
 }

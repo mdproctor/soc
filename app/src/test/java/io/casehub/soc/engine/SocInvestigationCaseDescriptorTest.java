@@ -20,7 +20,7 @@ class SocInvestigationCaseDescriptorTest {
 
     @Test
     void produces8Workers() {
-        assertThat(descriptor.workers()).hasSize(8);
+        assertThat(descriptor.workers()).hasSize(10);
     }
 
     @Test
@@ -36,12 +36,14 @@ class SocInvestigationCaseDescriptorTest {
         var byCapability = descriptor.workers().stream()
                                      .collect(Collectors.groupingBy(
                                              w -> w.capabilities().iterator().next()));
-        assertThat(byCapability).hasSize(5);
+        assertThat(byCapability).hasSize(7);
         assertThat(byCapability.get("cbr-retrieval")).hasSize(1);
         assertThat(byCapability.get("ioc-enrichment")).hasSize(2);
         assertThat(byCapability.get("attck-mapping")).hasSize(2);
         assertThat(byCapability.get("containment-recommendation")).hasSize(2);
         assertThat(byCapability.get("containment-execution")).hasSize(1);
+        assertThat(byCapability.get("recovery-verification-start")).hasSize(1);
+        assertThat(byCapability.get("recovery-verification-result")).hasSize(1);
     }
 
     @Test
@@ -65,6 +67,8 @@ class SocInvestigationCaseDescriptorTest {
                 "rule-ioc-enrichment", "llm-ioc-enrichment",
                 "rule-attck-mapping", "llm-attck-mapping",
                 "rule-containment-rec", "llm-containment-rec",
-                "rule-containment-exec");
+                "rule-containment-exec",
+                "rule-recovery-verification-start",
+                "rule-recovery-verification-result");
     }
 }

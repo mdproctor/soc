@@ -27,6 +27,10 @@ public class SocPiiSanitiser {
 
     private static final Pattern EMAIL = Pattern.compile(
             "\\b[A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}\\b");
+    private static final Pattern HOSTNAME = Pattern.compile(
+            "\\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,}\\b");
+    private static final String  REDACTED_HOSTNAME = "[REDACTED-HOST]";
+
 
     private static final String REDACTED_IP = "[REDACTED-IP]";
     private static final String REDACTED_EMAIL = "[REDACTED-EMAIL]";
@@ -38,12 +42,12 @@ public class SocPiiSanitiser {
         }
         try {
             String result = EMAIL.matcher(input).replaceAll(REDACTED_EMAIL);
+            result = HOSTNAME.matcher(result).replaceAll(REDACTED_HOSTNAME);
             result = IPV4.matcher(result).replaceAll(REDACTED_IP);
             result = IPV6.matcher(result).replaceAll(REDACTED_IP);
             return result;
         } catch (Exception e) {
             LOG.errorf(e, "PII sanitisation failed");
             return SANITISATION_FAILED;
-        }
-    }
+        }}
 }

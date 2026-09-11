@@ -79,13 +79,26 @@ public final class SocAgentDescriptors {
             Map.of());
     }
 
+    public static AgentDescriptor ruleRecoveryVerificationStart() {
+        return ruleDescriptor("rule-recovery-verification-start", "Recovery Verification Start",
+            "recovery-verification-start", 0.95,
+            Map.of());
+    }
+
+    public static AgentDescriptor ruleRecoveryVerificationResult() {
+        return ruleDescriptor("rule-recovery-verification-result", "Recovery Verification Result",
+            "recovery-verification-result", 0.95,
+            Map.of());
+    }
+
     public static List<AgentDescriptor> all() {
         return List.of(
                 ruleCbrRetrieval(),
                 ruleIocEnrichment(), llmIocEnrichment(),
                 ruleAttckMapping(), llmAttckMapping(),
                 ruleContainmentRecommendation(), llmContainmentRecommendation(),
-                ruleContainmentExecution());
+                ruleContainmentExecution(),
+                ruleRecoveryVerificationStart(), ruleRecoveryVerificationResult());
     }
 
     public static Map<String, AgentDescriptor> descriptorsByWorkerName() {
@@ -98,6 +111,8 @@ public final class SocAgentDescriptors {
         map.put("rule-containment-rec", ruleContainmentRecommendation());
         map.put("llm-containment-rec", llmContainmentRecommendation());
         map.put("rule-containment-exec", ruleContainmentExecution());
+        map.put("rule-recovery-verification-start", ruleRecoveryVerificationStart());
+        map.put("rule-recovery-verification-result", ruleRecoveryVerificationResult());
         return Map.copyOf(map);
     }
 

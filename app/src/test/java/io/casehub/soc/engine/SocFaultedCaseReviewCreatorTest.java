@@ -89,7 +89,7 @@ class SocFaultedCaseReviewCreatorTest {
 
         workItemCreator.activeByCallerRef = Optional.of(new WorkItemRef(
                 UUID.randomUUID(), WorkItemStatus.PENDING, "case-faulted:" + caseId,
-                null, null, "soc-tier2-analyst", null, "tenant-1", null, null, null));
+                null, null, "soc-tier2-analyst", null, "tenant-1", null, null, null, null));
 
         creator.processOutcome(event(
                 SocCaseTypes.INCIDENT_INVESTIGATION, CaseStatus.FAULTED.name(),
@@ -240,7 +240,7 @@ class SocFaultedCaseReviewCreatorTest {
             return new WorkItemRef(
                     UUID.randomUUID(), WorkItemStatus.PENDING, request.callerRef,
                     null, null, request.candidateGroups, null, request.tenancyId,
-                    request.payload, null, null);
+                    request.payload, null, null, null);
         }
 
         @Override

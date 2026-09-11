@@ -26,6 +26,8 @@ public class SocLedgerEntryWriter {
         Map.entry(SocStepType.CONTAINMENT_APPROVAL, Set.of("actionType", "approverId")),
         Map.entry(SocStepType.CONTAINMENT_REJECTION, Set.of("actionType", "rejectorId", "rejectionReason")),
         Map.entry(SocStepType.CONTAINMENT_EXECUTED, Set.of("executionResult", "containmentAction")),
+        Map.entry(SocStepType.RECOVERY_VERIFIED, Set.of("actionType", "nodeId", "convergenceTimestamp", "executionToConvergenceMs")),
+        Map.entry(SocStepType.RECOVERY_DIVERGED, Set.of("actionType", "nodeId", "lastObservedStatus", "timeoutMs")),
         Map.entry(SocStepType.INCIDENT_RESOLVED, Set.of("resolutionOutcome"))
     );
 

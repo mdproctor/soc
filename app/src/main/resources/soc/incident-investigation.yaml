@@ -33,6 +33,16 @@ spec:
       inputProjection: "{ alert: .alert, containmentRecommendation: .containmentRecommendation, actionGateApproved: .actionGateApproved, actionGateRejected: .actionGateRejected }"
       outputProjection: "{ containmentExecution: . }"
 
+    - name: recovery-verification-start
+      description: "Start desired-state reconciliation to verify containment took effect"
+      inputProjection: "{ alert: .alert, containmentExecution: .containmentExecution, caseId: .caseId }"
+      outputProjection: "{ recoveryVerification: . }"
+
+    - name: recovery-verification-result
+      description: "Record the outcome of recovery verification"
+      inputProjection: "{ recoveryVerification: .recoveryVerification, containmentExecution: .containmentExecution }"
+      outputProjection: "{ recoveryVerificationResult: . }"
+
   ## ─── Goals ──────────────────────────────────────────────────────────────────
   goals:
     - name: resolved
@@ -153,3 +163,16 @@ spec:
       on: { contextChange: {} }
       when: ".analystDecision != null and .containmentExecution == null"
       capability: containment-execution
+
+    ## Recovery verification start — fires after containment executes successfully.
+    ## Builds a desired-state graph and starts reconciliation.
+    - name: recovery-verification-start
+      on: { contextChange: {} }
+      when: ".containmentExecution != null and .containmentExecution.executed == true and .recoveryVerification == null"
+      capability: recovery-verification-start
+
+    ## Recovery verification result — fires when async reconciliation signals outcome.
+    - name: recovery-verification-result
+      on: { contextChange: {} }
+      when: ".recoveryVerification != null and .recoveryVerification.status != \"started\""
+      capability: recovery-verification-result

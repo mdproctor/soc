@@ -25,12 +25,12 @@ class SocAgentRegistrarTest {
     }
 
     @Test
-    void descriptorsReturnsEight() {
+    void descriptorsReturnsTen() {
         var registrar = registrars.stream()
                                   .filter(r -> r instanceof SocAgentRegistrar)
                                   .findFirst().orElseThrow();
         var descriptors = registrar.descriptors();
-        assertEquals(8, descriptors.size());
+        assertEquals(10, descriptors.size());
     }
 
     @Test

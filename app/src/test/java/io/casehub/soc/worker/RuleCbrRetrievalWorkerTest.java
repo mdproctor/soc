@@ -86,10 +86,25 @@ class RuleCbrRetrievalWorkerTest {
             public Integer purge(io.casehub.neocortex.memory.cbr.CbrRetentionPolicy p)                                                                                                                          {return 0;}
 
             @Override
-            public void supersede(String c, String t, String s, String r)                                                                                                                                       {}
+            public java.util.List<String> findCaseIds(String t, io.casehub.neocortex.memory.MemoryDomain d, String e, java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> f)                       {return java.util.List.of();}
 
             @Override
-            public void reinstate(String c, String t)                                                                                                                                                           {}
+            public int reinstateAll(java.util.Collection<String> c, String t)                                                                                                                                  {return 0;}
+
+            @Override
+            public int reinstateMatching(String t, io.casehub.neocortex.memory.MemoryDomain d, String e, java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> f) {return 0;}
+
+            @Override
+            public int supersedeMatching(String t, io.casehub.neocortex.memory.MemoryDomain d, String e, java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> f, String r) {return 0;}
+
+            @Override
+            public int supersedeAll(java.util.Collection<String> c, String t, String r) {return 0;}
+
+            @Override
+            public boolean supersede(String c, String t, String s, String r)                                                                                                                                       {return true;}
+
+            @Override
+            public boolean reinstate(String c, String t)                                                                                                                                                           {return true;}
 
             @Override
             public io.casehub.neocortex.memory.cbr.SupersessionStatus getSupersessionStatus(String c, String t)                                                                                                 {return null;}

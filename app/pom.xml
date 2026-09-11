@@ -112,6 +112,13 @@
       <artifactId>casehub-engine</artifactId>
       <version>${casehub.version}</version>
     </dependency>
+
+    <!-- Desired-state runtime — reconciliation loop, lifecycle manager, fault policy engine -->
+    <dependency>
+      <groupId>io.casehub</groupId>
+      <artifactId>casehub-desiredstate</artifactId>
+      <version>${casehub.version}</version>
+    </dependency>
     <dependency>
       <groupId>io.casehub</groupId>
       <artifactId>casehub-engine-scheduler-quartz</artifactId>

@@ -41,6 +41,12 @@
       <artifactId>casehub-eidos-api</artifactId>
     </dependency>
 
+    <!-- Desired-state API — NodeType, NodeSpec, HumanGating for recovery verification -->
+    <dependency>
+      <groupId>io.casehub</groupId>
+      <artifactId>casehub-desiredstate-api</artifactId>
+    </dependency>
+
     <!-- Mutiny — provided by Quarkus at runtime; needed at compile time for Ganglion SPI -->
     <dependency>
       <groupId>io.smallrye.reactive</groupId>

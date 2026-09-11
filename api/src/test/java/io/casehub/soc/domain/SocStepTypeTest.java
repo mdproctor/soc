@@ -17,6 +17,8 @@ class SocStepTypeTest {
                         SocStepType.CONTAINMENT_APPROVAL,
                         SocStepType.CONTAINMENT_REJECTION,
                         SocStepType.CONTAINMENT_EXECUTED,
+                        SocStepType.RECOVERY_VERIFIED,
+                        SocStepType.RECOVERY_DIVERGED,
                         SocStepType.INCIDENT_RESOLVED
                 },
                 SocStepType.values());
