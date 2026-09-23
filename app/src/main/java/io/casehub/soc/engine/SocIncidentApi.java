@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-@McpDomain(value = "soc/incidents", basePath = "/api/soc/incidents")
+@McpDomain(value = "soc/incidents", app = "soc", basePath = "/api/soc/incidents")
 @ApplicationScoped
 public class SocIncidentApi {
 

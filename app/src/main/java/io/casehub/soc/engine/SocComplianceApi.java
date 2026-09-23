@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@McpDomain(value = "soc/compliance", basePath = "/api/soc/compliance")
+@McpDomain(value = "soc/compliance", app = "soc", basePath = "/api/soc/compliance")
 @ApplicationScoped
 @RolesAllowed("soc-compliance-viewer")
 public class SocComplianceApi {

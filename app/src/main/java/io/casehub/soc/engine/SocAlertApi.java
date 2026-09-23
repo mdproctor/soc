@@ -9,7 +9,7 @@ import jakarta.ws.rs.QueryParam;
 
 import java.util.List;
 
-@McpDomain(value = "soc/alerts", basePath = "/api/soc/alerts")
+@McpDomain(value = "soc/alerts", app = "soc", basePath = "/api/soc/alerts")
 @ApplicationScoped
 public class SocAlertApi {
 

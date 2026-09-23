@@ -13,7 +13,7 @@ import jakarta.inject.Inject;
 import java.util.List;
 import java.util.UUID;
 
-@McpDomain(value = "soc/trust", basePath = "/api/soc/trust")
+@McpDomain(value = "soc/trust", app = "soc", basePath = "/api/soc/trust")
 @ApplicationScoped
 public class SocTrustApi {
 

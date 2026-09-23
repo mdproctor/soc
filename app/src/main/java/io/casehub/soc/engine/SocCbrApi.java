@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@McpDomain(value = "soc/cbr", basePath = "/api/soc/cbr")
+@McpDomain(value = "soc/cbr", app = "soc", basePath = "/api/soc/cbr")
 @ApplicationScoped
 public class SocCbrApi {
 
