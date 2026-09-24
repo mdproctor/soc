@@ -13,7 +13,7 @@ import jakarta.inject.Inject;
 
 import java.util.List;
 
-@McpDomain(value = "soc/kpis", app = "soc", basePath = "/api/soc/kpis")
+@McpDomain(value = "soc/kpis", app = "soc", basePath = "/api/soc/kpis", summary = "Get SOC key performance indicators")
 @ApplicationScoped
 public class SocKpiApi {
 

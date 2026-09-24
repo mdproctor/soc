@@ -20,7 +20,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
-@McpDomain(value = "soc/demo", app = "soc", basePath = "/api/soc/demo")
+@McpDomain(value = "soc/demo", app = "soc", basePath = "/api/soc/demo", summary = "SOC demonstration and training scenarios")
 @ApplicationScoped
 @RolesAllowed("soc-demo-admin")
 public class SocDemoApi {
