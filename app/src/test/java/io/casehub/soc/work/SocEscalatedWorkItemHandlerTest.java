@@ -132,9 +132,9 @@ class SocEscalatedWorkItemHandlerTest {
 
         @Override public CaseInstance save(CaseInstance instance, String tenancyId) { return instance; }
         @Override public CaseInstance update(CaseInstance instance, String tenancyId) { return instance; }
-        @Override public CaseInstance findByUuid(UUID uuid, String tenancyId) {
+        @Override public java.util.Optional<CaseInstance> findByUuid(UUID uuid, String tenancyId) {
             lookupCount++;
-            return instances.get(uuid + ":" + tenancyId);
+            return java.util.Optional.ofNullable(instances.get(uuid + ":" + tenancyId));
         }
         @Override public void updateStateAndAppendEvent(CaseInstance instance, EventLog eventLog, String tenancyId) {}
     }

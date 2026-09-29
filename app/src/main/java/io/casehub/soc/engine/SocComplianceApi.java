@@ -76,12 +76,12 @@ public class SocComplianceApi {
             @QueryParam("stepType") SocStepType stepType,
             @QueryParam("actorId") String actorId,
             @QueryParam("incidentId") UUID incidentId,
-            @QueryParam("page") @DefaultValue("0") int page,
-            @QueryParam("size") @DefaultValue("50") int size) {
+            @QueryParam("page") @DefaultValue("0") Integer page,
+            @QueryParam("size") @DefaultValue("50") Integer size) {
         Instant effectiveFrom = from != null ? from : Instant.now().minus(30, ChronoUnit.DAYS);
         Instant effectiveTo = to != null ? to : Instant.now();
-        int effectivePage = Math.max(0, page);
-        int effectiveSize = Math.min(Math.max(size, 1), 200);
+        int effectivePage = Math.max(0, page != null ? page : 0);
+        int effectiveSize = Math.min(Math.max(size != null ? size : 50, 1), 200);
         return service.filteredEntries(effectiveFrom, effectiveTo, stepType, actorId,
             incidentId, effectivePage, effectiveSize, currentPrincipal.tenancyId());
     }

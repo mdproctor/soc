@@ -3,7 +3,6 @@ package io.casehub.soc.connector.identity;
 import io.casehub.platform.api.mcp.HandWrittenEndpoint;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import io.casehub.platform.api.mcp.HandWrittenEndpoint;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -12,7 +11,6 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.Map;
 
-@HandWrittenEndpoint("external system health check")
 @Path("/identity/health")
 @ApplicationScoped
 @HandWrittenEndpoint("Identity provider connectivity health check")
